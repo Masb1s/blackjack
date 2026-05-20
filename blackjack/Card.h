@@ -15,10 +15,15 @@ class Card
 {
 public:
     Card(const std::string& rank, Suit suit);
+
     std::string getRank() const;
     Suit getSuit() const;
+
     int getBaseValue() const;
+    int getValue() const; 
+
     std::string toShortString() const;
+
 private:
     std::string rank;
     Suit suit;

@@ -19,22 +19,24 @@ Suit Card::getSuit() const
 int Card::getBaseValue() const
 {
     if (rank == "A")
-    {
         return 11;
-    }
+
     if (rank == "K" || rank == "Q" || rank == "J")
-    {
         return 10;
-    }
+
     try
     {
-        int v = std::stoi(rank);
-        return v;
+        return std::stoi(rank);
     }
     catch (...)
     {
         return 0;
     }
+}
+
+int Card::getValue() const
+{
+    return getBaseValue();
 }
 
 std::string Card::toShortString() const
@@ -63,6 +65,7 @@ std::string Card::toShortString() const
         suitChar[2] = '\xA0';
         break;
     }
+
     std::ostringstream oss;
     oss << rank << suitChar;
     return oss.str();

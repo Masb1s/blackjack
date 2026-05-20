@@ -118,6 +118,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
+      <AdditionalIncludeDirectories>C:\Users\Maxim\source\repos\blackjack\blackjack;C:\Users\Maxim\source\repos\blackjack\WindowsProject1;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -132,6 +133,7 @@
     <ClInclude Include="..\blackjack\Hand.h" />
     <ClInclude Include="..\blackjack\History.h" />
     <ClInclude Include="..\blackjack\Player.h" />
+    <ClInclude Include="..\blackjack\Settings.h" />
     <ClInclude Include="framework.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="targetver.h" />
@@ -145,6 +147,7 @@
     <ClCompile Include="..\blackjack\Hand.cpp" />
     <ClCompile Include="..\blackjack\History.cpp" />
     <ClCompile Include="..\blackjack\Player.cpp" />
+    <ClCompile Include="..\blackjack\Settings.cpp" />
     <ClCompile Include="WindowsProject1.cpp" />
   </ItemGroup>
   <ItemGroup>

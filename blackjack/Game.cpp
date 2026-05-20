@@ -43,7 +43,7 @@ std::string Game::applyPromoCode(const std::string& code)
     if (code == "FREE100")
     {
         player.increaseBalance(100);
-        lastResult = "Promo applied: +100, balance: " + std::to_string(player.getBalance());
+        lastResult = "Promo applied: +100$, balance: $" + std::to_string(player.getBalance());
         history.addRecord(lastResult);
         return lastResult;
     }
@@ -58,7 +58,7 @@ std::string Game::applyPromoCode(const std::string& code)
     if (code == "777")
     {
         player.increaseBalance(500);
-        lastResult = "Promo applied: +500, balance: " + std::to_string(player.getBalance());
+        lastResult = "Promo applied: +500$, balance: $" + std::to_string(player.getBalance());
         history.addRecord(lastResult);
         return lastResult;
     }
@@ -66,7 +66,7 @@ std::string Game::applyPromoCode(const std::string& code)
     if (code == "666")
     {
         player.decreaseBalance(500);
-        lastResult = "Promo applied: -500, balance: " + std::to_string(player.getBalance());
+        lastResult = "Promo applied: -500$, balance: $" + std::to_string(player.getBalance());
         history.addRecord(lastResult);
         return lastResult;
     }
@@ -92,23 +92,61 @@ void Game::ensureDeck()
 bool Game::startRound(int bet)
 {
     if (state == RoundState::InProgress)
+    {
+        lastResult = "Round already in progress.";
+        history.addRecord(lastResult);
         return false;
+    }
 
-    if (bet <= 0 || bet > player.getBalance())
+    if (bet <= 0)
+    {
+        lastResult = "Bet must be greater than zero.";
+        history.addRecord(lastResult);
         return false;
+    }
+
+    if (bet > player.getBalance())
+    {
+        lastResult = "Insufficient balance.";
+        history.addRecord(lastResult);
+        return false;
+    }
 
     resetRound();
 
     if (!player.placeBet(bet))
+    {
+        lastResult = "Bet placement failed.";
+        history.addRecord(lastResult);
         return false;
+    }
 
     ensureDeck();
     dealInitialCards();
 
     state = RoundState::InProgress;
     activeHandIndex = 0;
+
+    if (hintsEnabled)
+    {
+        int dealerUp = dealer.getUpCardValue();
+        const auto& hands = player.getHands();
+        if (!hands.empty())
+        {
+            lastResult = Settings::getHint(hands[0], dealerUp);
+            history.addRecord(lastResult);
+        }
+    }
+    else
+    {
+        lastResult = "Round started";
+        history.addRecord(lastResult);
+    }
+
     return true;
 }
+
+
 
 void Game::dealInitialCards()
 {
@@ -123,13 +161,21 @@ void Game::dealInitialCards()
     player.addHand(firstHand);
 
     player.setBetForHand(0, player.getCurrentBet());
+
+    dealer.addCard(deck.drawCard());
+    dealer.addCard(deck.drawCard());
 }
+
 
 
 bool Game::hit()
 {
     if (state != RoundState::InProgress)
+    {
+        lastResult = "Round is already finished. Actions are disabled.";
+        history.addRecord(lastResult);
         return false;
+    }
 
     auto& hands = player.getHands();
     if (activeHandIndex >= hands.size())
@@ -140,15 +186,10 @@ bool Game::hit()
     if (hands[activeHandIndex].isBust())
     {
         auto bets = player.getBets();
-        int bet = 0;
-        if (!bets.empty() && activeHandIndex < bets.size())
-            bet = bets[activeHandIndex];
+        int bet = (activeHandIndex < bets.size()) ? bets[activeHandIndex] : 0;
 
-        std::string prefix = (bet > 0)
-            ? "Bust: -" + std::to_string(bet)
-            : "Bust";
-
-        lastResult = prefix + ", balance: " + std::to_string(player.getBalance());
+        lastResult = "Bust: -" + std::to_string(bet) +
+            ", balance: $" + std::to_string(player.getBalance());
         history.addRecord(lastResult);
 
         ++activeHandIndex;
@@ -159,10 +200,15 @@ bool Game::hit()
     return true;
 }
 
+
 bool Game::stand()
 {
     if (state != RoundState::InProgress)
+    {
+        lastResult = "Round is already finished. Actions are disabled.";
+        history.addRecord(lastResult);
         return false;
+    }
 
     ++activeHandIndex;
     if (activeHandIndex >= player.getHands().size())
@@ -174,32 +220,30 @@ bool Game::stand()
 bool Game::doubleDown()
 {
     if (state != RoundState::InProgress)
+    {
+        lastResult = "Round is already finished. Actions are disabled.";
+        history.addRecord(lastResult);
         return false;
+    }
 
     auto bets = player.getBets();
-    if (bets.empty() || activeHandIndex >= bets.size())
+    if (activeHandIndex >= bets.size())
         return false;
 
-    int betForHand = bets[activeHandIndex];
-    if (betForHand > player.getBalance())
+    int bet = bets[activeHandIndex];
+    if (bet > player.getBalance())
         return false;
 
-    player.decreaseBalance(betForHand);
-    player.setBetForHand(activeHandIndex, betForHand * 2);
+    player.decreaseBalance(bet);
+    player.setBetForHand(activeHandIndex, bet * 2);
 
     auto& hands = player.getHands();
-    if (activeHandIndex >= hands.size())
-        return false;
-
     hands[activeHandIndex].addCard(deck.drawCard());
-
-    auto updatedBets = player.getBets();
-    int finalBet = (activeHandIndex < updatedBets.size()) ? updatedBets[activeHandIndex] : betForHand * 2;
 
     if (hands[activeHandIndex].isBust())
     {
-        std::string prefix = "Bust after double: -" + std::to_string(finalBet);
-        lastResult = prefix + ", balance: " + std::to_string(player.getBalance());
+        lastResult = "Bust after double: -" + std::to_string(bet * 2) +
+            ", balance: $" + std::to_string(player.getBalance());
         history.addRecord(lastResult);
     }
 
@@ -213,7 +257,11 @@ bool Game::doubleDown()
 bool Game::split()
 {
     if (state != RoundState::InProgress)
+    {
+        lastResult = "Round is already finished. Actions are disabled.";
+        history.addRecord(lastResult);
         return false;
+    }
 
     if (!player.canSplit())
         return false;
@@ -242,6 +290,8 @@ bool Game::split()
     activeHandIndex = 0;
     return true;
 }
+
+
 
 void Game::processDealerAndResolve()
 {
@@ -290,7 +340,7 @@ void Game::resolveHand(size_t handIndex)
         outcome = "Lose: -" + std::to_string(bet);
     }
 
-    lastResult = outcome + ", balance: " + std::to_string(player.getBalance());
+    lastResult = outcome + ", balance: $" + std::to_string(player.getBalance());
     history.addRecord(lastResult);
 }
 

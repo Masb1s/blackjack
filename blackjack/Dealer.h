@@ -4,7 +4,6 @@
 #include "Hand.h"
 #include "Deck.h"
 #include <string>
-
 class Dealer
 {
 public:
@@ -15,8 +14,13 @@ public:
     const Hand& getHand() const;
     int getValue() const;
     std::string toString(bool hideHoleCard) const;
+
+    int getUpCardValue() const;
+    bool hasSoft17() const;
+
 private:
     Hand hand;
 };
+
 
 #endif
